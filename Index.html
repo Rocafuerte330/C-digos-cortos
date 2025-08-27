@@ -1,0 +1,2172 @@
+
+<!DOCTYPE html>
+<html lang="es">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis de Vector de Posición y Aceleración Centrípeta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tiempos+Headline:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.5.0/mermaid.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #0f3460;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #64748b;
+            --border: #334155;
+        }
+        
+        .font-serif { font-family: 'Tiempos Headline', serif; }
+        .font-sans { font-family: 'Inter', sans-serif; }
+        
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: var(--text-primary);
+            line-height: 1.7;
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, 
+                rgba(15, 23, 42, 0.95) 0%, 
+                rgba(30, 41, 59, 0.9) 50%, 
+                rgba(51, 65, 85, 0.85) 100%);
+        }
+        
+        .math-expression {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            color: #60a5fa;
+            overflow-x: auto;
+        }
+        
+        .toc-fixed {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            width: 280px;
+            max-height: calc(100vh - 4rem);
+            overflow-y: auto;
+            z-index: 50;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .content-main {
+            margin-left: 320px;
+            max-width: 900px;
+        }
+        
+        .bento-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        
+        .bento-item {
+            background: rgba(30, 41, 59, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            backdrop-filter: blur(5px);
+        }
+        
+        .hero-title {
+            grid-column: 1 / 2;
+            grid-row: 1 / 3;
+        }
+        
+        .hero-visual {
+            grid-column: 2 / 3;
+            grid-row: 1 / 2;
+        }
+        
+        .hero-summary {
+            grid-column: 2 / 3;
+            grid-row: 2 / 3;
+        }
+        
+        .chart-container {
+            background: rgba(30, 41, 59, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            backdrop-filter: blur(5px);
+        }
+        
+        .citation {
+            color: #60a5fa;
+            text-decoration: none;
+            border-bottom: 1px dotted #60a5fa;
+        }
+        
+        .citation:hover {
+            color: #93c5fd;
+            border-bottom-style: solid;
+        }
+        
+        .section-divider {
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), transparent);
+            margin: 3rem 0;
+            border-radius: 1px;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(59, 130, 246, 0.05));
+            border-left: 4px solid #60a5fa;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .mermaid-container {
+            display: flex;
+            justify-content: center;
+            min-height: 300px;
+            max-height: 800px;
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mermaid-container .mermaid {
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
+            cursor: grab;
+            transition: transform 0.3s ease;
+            transform-origin: center center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        .mermaid-container .mermaid svg {
+            max-width: 100%;
+            height: 100%;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .mermaid-container .mermaid:active {
+            cursor: grabbing;
+        }
+
+        .mermaid-container.zoomed .mermaid {
+            height: 100%;
+            width: 100%;
+            cursor: grab;
+        }
+
+        .mermaid-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .mermaid-control-btn {
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #374151;
+            font-size: 14px;
+            min-width: 36px;
+            height: 36px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mermaid-control-btn:hover {
+            background: #f8fafc;
+            border-color: #3b82f6;
+            color: #3b82f6;
+            transform: translateY(-1px);
+        }
+
+        .mermaid-control-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Responsive adjustments for mermaid controls */
+        @media (max-width: 1024px) {
+            .mermaid-control-btn:not(.reset-zoom) {
+                display: none;
+            }
+            .mermaid-controls {
+                top: auto;
+                bottom: 15px;
+                right: 15px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .toc-fixed {
+                display: none;
+            }
+            .content-main {
+                margin-left: 0;
+                padding: 0 1rem;
+            }
+            .bento-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+            }
+            .hero-title {
+                grid-column: 1;
+                grid-row: 1;
+            }
+            .hero-visual {
+                grid-column: 1;
+                grid-row: 2;
+                padding: 1rem;
+            }
+            .hero-summary {
+                grid-column: 1;
+                grid-row: 3;
+                padding: 1rem;
+            }
+            .bento-item {
+                word-wrap: break-word;
+            }
+            .mermaid-container {
+                padding: 15px;
+                overflow-x: auto;
+            }
+        }
+    </style>
+  </head>
+
+  <body class="font-sans">
+    <!-- Fixed Table of Contents -->
+    <nav class="toc-fixed">
+      <h3 class="font-serif text-lg font-bold text-blue-300 mb-4">Índice</h3>
+      <ul class="space-y-2 text-sm">
+        <li>
+          <a href="#introduccion" class="citation">Introducción</a>
+        </li>
+        <li>
+          <a href="#vector-velocidad" class="citation">Vector Velocidad</a>
+        </li>
+        <li class="ml-4">
+          <a href="#calculo-vector" class="citation">Cálculo del Vector</a>
+        </li>
+        <li class="ml-4">
+          <a href="#magnitud-velocidad" class="citation">Magnitud del Vector</a>
+        </li>
+        <li>
+          <a href="#aceleracion-centripeta" class="citation">Aceleración Centrípeta</a>
+        </li>
+        <li class="ml-4">
+          <a href="#magnitud-aceleracion" class="citation">Magnitud de la Aceleración</a>
+        </li>
+        <li class="ml-4">
+          <a href="#direccion-aceleracion" class="citation">Dirección de la Aceleración</a>
+        </li>
+        <li>
+          <a href="#visualizacion-geogebra" class="citation">Visualización en GeoGebra</a>
+        </li>
+        <li class="ml-4">
+          <a href="#metodologia" class="citation">Metodología</a>
+        </li>
+        <li class="ml-4">
+          <a href="#comandos-geogebra" class="citation">Comandos de GeoGebra</a>
+        </li>
+        <li>
+          <a href="#conclusiones" class="citation">Conclusiones</a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content-main px-8 py-12">
+      <!-- Hero Section with Bento Grid -->
+      <div class="bento-grid">
+        <!-- Hero Title -->
+        <div class="bento-item hero-title">
+          <h1 class="font-serif text-4xl md:text-5xl font-bold leading-tight mb-6">
+            <span class="italic text-blue-300">Análisis del Vector</span>
+            <br>
+            de Posición y
+            <br>
+            <span class="text-2xl md:text-3xl text-slate-300">Cálculo de la Aceleración Centrípeta</span>
+          </h1>
+          <p class="text-lg text-slate-300 leading-relaxed">
+            Un estudio detallado del vector de posición
+            <span class="math-expression inline px-2 py-1 text-sm">
+              $\vec{r} = (3 + 8\sin{4t}, 7 + t^2, 10\cos{5t})$
+            </span>
+            y su aplicación en la determinación de la aceleración centrípeta mediante métodos analíticos y visualización computacional.
+          </p>
+        </div>
+
+        <!-- Hero Visual -->
+        <div class="bento-item hero-visual">
+          <img src="https://kimi-img.moonshot.cn/pub/icon/spinner.svg" alt="Representación tridimensional de un vector en movimiento circular" class="w-full h-32 object-cover rounded-lg opacity-80" size="small" aspect="wide" query="diagrama vector 3D movimiento circular" referrerpolicy="no-referrer" />
+        </div>
+
+        <!-- Hero Summary -->
+        <div class="bento-item hero-summary">
+          <h3 class="font-serif text-xl font-bold text-blue-300 mb-3">Resumen Ejecutivo</h3>
+          <ul class="text-sm space-y-2 text-slate-300">
+            <li class="flex items-start">
+              <i class="fas fa-vector-square text-blue-400 mt-1 mr-2"></i>
+              <span>Vector velocidad calculado mediante derivación componente por componente</span>
+            </li>
+            <li class="flex items-start">
+              <i class="fas fa-calculator text-green-400 mt-1 mr-2"></i>
+              <span>Expresión simplificada para la magnitud de la velocidad</span>
+            </li>
+            <li class="flex items-start">
+              <i class="fas fa-compass text-yellow-400 mt-1 mr-2"></i>
+              <span>Aceleración centrípeta con magnitud y dirección precisas</span>
+            </li>
+            <li class="flex items-start">
+              <i class="fas fa-chart-line text-purple-400 mt-1 mr-2"></i>
+              <span>11 vectores listos para visualización en GeoGebra</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Introduction Section -->
+      <section id="introduccion">
+        <div class="highlight-box">
+          <p class="text-lg leading-relaxed">
+            <strong>Contexto Teórico:</strong> La aceleración centrípeta es una cantidad vectorial fundamental en la cinemática de partículas que describe la tasa de cambio de la dirección del vector velocidad. En movimientos curvilíneos, esta aceleración apunta hacia el centro de curvatura de la trayectoria, proporcional al cuadrado de la rapidez y en la dirección del vector de posición.
+            <a href="#" class="citation">[1]</a>
+          </p>
+        </div>
+      </section>
+
+      <!-- Vector Velocity Section -->
+      <section id="vector-velocidad" class="mt-16">
+        <h2 class="font-serif text-3xl font-bold text-blue-300 mb-8">1. Vector Velocidad y su Magnitud</h2>
+
+        <div id="calculo-vector" class="mb-12">
+          <h3 class="font-serif text-2xl font-bold mb-6">1.1 Cálculo del Vector Velocidad ($\vec{v}$)</h3>
+
+          <p class="text-lg mb-6">
+            El vector velocidad se obtiene mediante la derivada del vector de posición $\vec{r}$ con respecto al tiempo $t$. Este proceso fundamental en cinemática relaciona la posición de una partícula con su rapidez y dirección de movimiento instantáneas.
+          </p>
+
+          <div class="grid md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-600">
+              <h4 class="font-bold text-blue-300 mb-3">Componente X: $v_x = 32\cos(4t)$</h4>
+              <p class="text-sm text-slate-300">
+                Derivada de $r_x = 3 + 8\sin{4t}$ aplicando la regla de la cadena. La velocidad en x es una función cosenoidal con amplitud <strong>32</strong> y frecuencia angular de <strong>4 radianes</strong> por unidad de tiempo.
+              </p>
+              <div class="math-expression mt-3 text-xs">
+                $v_x = \frac{d}{dt}[8\sin{4t}] = 8 \cdot \cos{4t} \cdot 4 = 32\cos{4t}$
+              </div>
+            </div>
+
+            <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-600">
+              <h4 class="font-bold text-green-300 mb-3">Componente Y: $v_y = 2t$</h4>
+              <p class="text-sm text-slate-300">
+                Derivada de $r_y = 7 + t^2$ aplicando la regla de potencias. La velocidad en y aumenta linealmente con el tiempo, característica de movimiento rectilíneo uniformemente acelerado.
+              </p>
+              <div class="math-expression mt-3 text-xs">
+                $v_y = \frac{d}{dt}[t^2] = 2t$
+              </div>
+            </div>
+
+            <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-600">
+              <h4 class="font-bold text-yellow-300 mb-3">Componente Z: $v_z = -50\sin(5t)$</h4>
+              <p class="text-sm text-slate-300">
+                Derivada de $r_z = 10\cos{5t}$ aplicando la regla de la cadena. La velocidad en z es una función senoidal con amplitud <strong>50</strong> y frecuencia angular de <strong>5 radianes</strong> por unidad de tiempo.
+              </p>
+              <div class="math-expression mt-3 text-xs">
+                $v_z = \frac{d}{dt}[10\cos{5t}] = 10 \cdot (-\sin{5t}) \cdot 5 = -50\sin{5t}$
+              </div>
+            </div>
+          </div>
+
+          <div class="highlight-box">
+            <h4 class="font-bold text-blue-300 mb-3">Vector Velocidad Final</h4>
+            <div class="math-expression text-center">
+              $\vec{v} = (32\cos{4t}, 2t, -50\sin{5t})$
+            </div>
+          </div>
+        </div>
+
+        <div id="magnitud-velocidad" class="mb-12">
+          <h3 class="font-serif text-2xl font-bold mb-6">1.2 Cálculo de la Magnitud del Vector Velocidad ($||\vec{v}||$)</h3>
+
+          <p class="text-lg mb-6">
+            La magnitud del vector velocidad representa la rapidez instantánea de la partícula. Se calcula como la raíz cuadrada de la suma de los cuadrados de sus componentes.
+          </p>
+
+          <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-600 mb-6">
+            <h4 class="font-bold text-purple-300 mb-3">Fórmula General de la Magnitud</h4>
+            <div class="math-expression text-center">
+              $||\vec{v}|| = \sqrt{v_x^2 + v_y^2 + v_z^2}$
+            </div>
+          </div>
+
+          <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-600">
+            <h4 class="font-bold text-green-300 mb-3">Expresión Simplificada</h4>
+            <p class="text-sm text-slate-300 mb-4">
+              Sustituyendo las componentes del vector velocidad y simplificando, obtenemos:
+            </p>
+            <div class="math-expression text-center mb-4">
+              $||\vec{v}|| = 2\sqrt{256\cos^2{4t} + t^2 + 625\sin^2{5t}}$
+            </div>
+            <p class="text-sm text-slate-300">
+              Esta expresión muestra que la rapidez es una función compleja del tiempo, con términos oscilatorios y una tendencia general a aumentar con el tiempo.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- Centripetal Acceleration Section -->
+      <section id="aceleracion-centripeta" class="mt-16">
+        <h2 class="font-serif text-3xl font-bold text-blue-300 mb-8">2. Aceleración Centrípeta ($\vec{a_c}$)</h2>
+
+        <div class="highlight-box mb-8">
+          <p class="text-lg">
+            <strong>Definición General:</strong> La aceleración centrípeta es una cantidad vectorial que describe la tasa de cambio de la dirección del vector velocidad. En movimientos curvilíneos, apunta hacia el centro de curvatura de la trayectoria.
+            <a href="#" class="citation">[2]</a>
+          </p>
+        </div>
+
+        <div id="magnitud-aceleracion" class="mb-12">
+          <h3 class="font-serif text-2xl font-bold mb-6">2.1 Magnitud de la Aceleración Centrípeta ($a_c$)</h3>
+
+          <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-600 mb-6">
+            <h4 class="font-bold text-red-300 mb-3">Fórmula Fundamental: $a_c = \frac{||\vec{v}||^2}{||\vec{r}||}$</h4>
+            <p class="text-sm text-slate-300 mb-4">
+              La magnitud de la aceleración centrípeta es directamente proporcional al cuadrado de la rapidez e inversamente proporcional a la distancia al origen.
+            </p>
+            <div class="math-expression text-center">
+              $a_c = \frac{||\vec{v}||^2}{||\vec{r}||} = \frac{1024\cos^2{4t} + 4t^2 + 2500\sin^2{5t}}{\sqrt{(3 + 8\sin{4t})^2 + (7 + t^2)^2 + (10\cos{5t})^2}}$
+            </div>
+          </div>
+        </div>
+
+        <div id="direccion-aceleracion" class="mb-12">
+          <h3 class="font-serif text-2xl font-bold mb-6">2.2 Dirección de la Aceleración Centrípeta</h3>
+
+          <div class="grid md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-600">
+              <h4 class="font-bold text-blue-300 mb-3">Vector Unitario en la Dirección de $\vec{r}$</h4>
+              <div class="math-expression text-xs mb-3">
+                $\vec{u_r} = \frac{\vec{r}}{||\vec{r}||}$
+              </div>
+              <p class="text-sm text-slate-300">
+                El vector unitario proporciona una descripción de la dirección sin considerar la magnitud. Es fundamental para separar la magnitud de la dirección de la aceleración.
+              </p>
+            </div>
+
+            <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-600">
+              <h4 class="font-bold text-green-300 mb-3">Vector de Aceleración Centrípeta</h4>
+              <div class="math-expression text-xs mb-3">
+                $\vec{a_c} = a_c \cdot \vec{u_r} = \frac{||\vec{v}||^2}{||\vec{r}||^2} \vec{r}$
+              </div>
+              <p class="text-sm text-slate-300">
+                El vector de aceleración centrípeta es paralelo al vector de posición, apuntando desde la posición de la partícula hacia el origen.
+              </p>
+            </div>
+          </div>
+
+          <!-- Mermaid Diagram -->
+          <div class="mermaid-container">
+            <div class="mermaid-controls">
+              <button class="mermaid-control-btn zoom-in" title="放大">
+                <i class="fas fa-search-plus"></i>
+              </button>
+              <button class="mermaid-control-btn zoom-out" title="缩小">
+                <i class="fas fa-search-minus"></i>
+              </button>
+              <button class="mermaid-control-btn reset-zoom" title="重置">
+                <i class="fas fa-expand-arrows-alt"></i>
+              </button>
+              <button class="mermaid-control-btn fullscreen" title="全屏查看">
+                <i class="fas fa-expand"></i>
+              </button>
+            </div>
+            <div class="mermaid">
+              graph TD
+              A["Vector de Posición r(t)"] --> B["Derivación"]
+              B --> C["Vector Velocidad v(t)"]
+              C --> D["Magnitud ||v||"]
+              A --> E["Magnitud ||r||"]
+              D --> F["||v||²"]
+              E --> G["Centripetal Acceleration"]
+              F --> G
+              G --> H["Dirección: Vector Unitario u_r"]
+              H --> I["Aceleración Centrípeta a_c"]
+
+              style A fill:#1a1a2e,stroke:#60a5fa,stroke-width:2px,color:#f8fafc
+              style C fill:#16213e,stroke:#34d399,stroke-width:2px,color:#f8fafc
+              style G fill:#0f3460,stroke:#fbbf24,stroke-width:2px,color:#f8fafc
+              style I fill:#dc2626,stroke:#f87171,stroke-width:2px,color:#f8fafc
+
+              classDef default fill:#1e293b,stroke:#334155,stroke-width:1px,color:#cbd5e1
+              classDef process fill:#1e293b,stroke:#334155,stroke-width:1px,color:#cbd5e1
+              classDef data fill:#1e293b,stroke:#334155,stroke-width:1px,color:#cbd5e1
+            </div>
+          </div>
+
+          <h4 class="font-bold text-yellow-300 mb-4">Componentes del Vector de Aceleración Centrípeta</h4>
+          <div class="grid md:grid-cols-3 gap-4">
+            <div class="math-expression text-xs">
+              $a_{c_x} = \frac{||\vec{v}||^2}{||\vec{r}||^2} (3 + 8\sin{4t})$
+            </div>
+            <div class="math-expression text-xs">
+              $a_{c_y} = \frac{||\vec{v}||^2}{||\vec{r}||^2} (7 + t^2)$
+            </div>
+            <div class="math-expression text-xs">
+              $a_{c_z} = \frac{||\vec{v}||^2}{||\vec{r}||^2} (10\cos{5t})$
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- GeoGebra Visualization Section -->
+      <section id="visualizacion-geogebra" class="mt-16">
+        <h2 class="font-serif text-3xl font-bold text-blue-300 mb-8">3. Expresiones para la Visualización en GeoGebra</h2>
+
+        <div id="metodologia" class="mb-12">
+          <h3 class="font-serif text-2xl font-bold mb-6">3.1 Metodología para la Generación de Vectores</h3>
+
+          <div class="grid md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-gradient-to-br from-blue-900/30 to-blue-800/20 p-6 rounded-lg border border-blue-600/30">
+              <i class="fas fa-clock text-blue-400 text-2xl mb-3"></i>
+              <h4 class="font-bold text-blue-300 mb-3">Selección de Valores de Tiempo</h4>
+              <p class="text-sm text-slate-300">
+                11 valores de $t$ desde 0 hasta 5 con incremento de 0.5, proporcionando una muestra representativa de la trayectoria.
+              </p>
+            </div>
+
+            <div class="bg-gradient-to-br from-green-900/30 to-green-800/20 p-6 rounded-lg border border-green-600/30">
+              <i class="fas fa-calculator text-green-400 text-2xl mb-3"></i>
+              <h4 class="font-bold text-green-300 mb-3">Cálculo de Vectores</h4>
+              <p class="text-sm text-slate-300">
+                Para cada $t$, se calculan los vectores de posición $\vec{r}(t)$ y aceleración centrípeta $\vec{a_c}(t)$.
+              </p>
+            </div>
+
+            <div class="bg-gradient-to-br from-purple-900/30 to-purple-800/20 p-6 rounded-lg border border-purple-600/30">
+              <i class="fas fa-code text-purple-400 text-2xl mb-3"></i>
+              <h4 class="font-bold text-purple-300 mb-3">Formato GeoGebra</h4>
+              <p class="text-sm text-slate-300">
+                Comandos en formato
+                <code>Vector((x1,y1,z1), (x2,y2,z2))</code> para visualización directa.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div id="comandos-geogebra" class="mb-12">
+          <h3 class="font-serif text-2xl font-bold mb-6">3.2 Lista de Expresiones para 11 Vectores de $\vec{a_c}$</h3>
+
+          <div class="overflow-x-auto">
+            <table class="w-full bg-slate-800/30 border border-slate-600 rounded-lg">
+              <thead class="bg-slate-700/50">
+                <tr>
+                  <th class="px-6 py-4 text-left font-bold text-blue-300">Tiempo (t)</th>
+                  <th class="px-6 py-4 text-left font-bold text-blue-300">Comando de GeoGebra</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-600">
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">0.0</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((3, 7, 10), (1536/79, 3584/79, 5120/79))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">0.5</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((10.2743794146055, 7.25000000000000, -8.01143615546934), (49.6255653687122, 35.0177207210894, -38.6954805333881))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">1.0</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((-3.05441996246343, 8.00000000000000, 2.83662185463226), (-102.857960004734, 269.400963243518, 95.5235824994431))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">1.5</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((0.764676014408593, 9.25000000000000, 3.46635317835026), (24.5588454954038, 297.079176738896, 111.327713352492))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">2.0</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((10.9148659729871, 11.0000000000000, -8.39071529076452), (27.3303888908661, 27.5435610976406, -21.0100162967345))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">2.5</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((-1.35216888711496, 13.2500000000000, 9.97798279178581), (-3.69561141434797, 36.2135615652186, 27.2708146510964))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">3.0</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((-1.29258334400348, 16.0000000000000, -7.59687912858821), (-7.46887598139352, 92.4520776603591, -43.8967036982874))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">3.5</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((10.9248588455590, 19.2500000000000, 2.19439963211459), (54.0525553691812, 95.2425752649165, 10.8571569934015))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">4.0</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((0.696773466679478, 23.0000000000000, 4.08082061813392), (3.93818867280101, 129.996826523950, 23.0649447813440))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">4.5</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((-3.00789797417341, 27.2500000000000, -8.73304640093516), (-4.07227942305567, 36.8927454425253, -11.8233415709161))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">5.0</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((10.3035620058210, 32.0000000000000, 9.91202811863474), (2.63642674041773, 8.18800873384417, 2.53624290017157))</code>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="highlight-box mt-6">
+            <h4 class="font-bold text-blue-300 mb-3">Instrucciones para GeoGebra</h4>
+            <ol class="list-decimal list-inside space-y-2 text-sm">
+              <li>Abrir GeoGebra en modo 3D (<a href="https://www.geogebra.org/3d" class="citation">geogebra.org/3d</a>)</li>
+              <li>Activar la vista algebraica (menú Vista > Vista Algebraica)</li>
+              <li>Copiar y pegar cada comando en la barra de entrada</li>
+              <li>Presionar Enter para visualizar cada vector</li>
+              <li>Usar la herramienta de rotación 3D para explorar la visualización</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- Conclusions Section -->
+      <section id="conclusiones" class="mt-16">
+        <h2 class="font-serif text-3xl font-bold text-blue-300 mb-8">4. Conclusiones y Aplicaciones</h2>
+
+        <div class="grid md:grid-cols-2 gap-8 mb-8">
+          <div class="bg-gradient-to-br from-slate-800/50 to-slate-700/40 p-8 rounded-lg border border-slate-600">
+            <h3 class="font-serif text-xl font-bold text-green-300 mb-4">Resultados Clave</h3>
+            <ul class="space-y-3 text-slate-300">
+              <li class="flex items-start">
+                <i class="fas fa-check-circle text-green-400 mt-1 mr-3"></i>
+                <span>Vector velocidad calculado correctamente mediante derivación componente por componente</span>
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-check-circle text-green-400 mt-1 mr-3"></i>
+                <span>Expresión simplificada obtenida para la magnitud de la velocidad</span>
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-check-circle text-green-400 mt-1 mr-3"></i>
+                <span>Aceleración centrípeta determinada con precisión en magnitud y dirección</span>
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-check-circle text-green-400 mt-1 mr-3"></i>
+                <span>11 vectores generados para visualización completa en GeoGebra</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="bg-gradient-to-br from-slate-800/50 to-slate-700/40 p-8 rounded-lg border border-slate-600">
+            <h3 class="font-serif text-xl font-bold text-blue-300 mb-4">Aplicaciones Prácticas</h3>
+            <ul class="space-y-3 text-slate-300">
+              <li class="flex items-start">
+                <i class="fas fa-rocket text-blue-400 mt-1 mr-3"></i>
+                <span>Análisis de trayectorias en mecánica orbital y dinámica de partículas</span>
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-cog text-blue-400 mt-1 mr-3"></i>
+                <span>Diseño de sistemas mecánicos con movimiento curvilíneo</span>
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-atom text-blue-400 mt-1 mr-3"></i>
+                <span>Estudio de partículas en campos de fuerza central</span>
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-chart-line text-blue-400 mt-1 mr-3"></i>
+                <span>Validación de modelos computacionales en física</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-blue-900/30 to-purple-900/30 p-8 rounded-lg border border-blue-600/30">
+          <h3 class="font-serif text-xl font-bold text-blue-300 mb-4">Impacto Educativo</h3>
+          <p class="text-lg text-slate-300 leading-relaxed mb-4">
+            Este análisis demuestra la aplicación práctica de conceptos fundamentales de cinemática vectorial. La visualización en GeoGebra permite una comprensión intuitiva de cómo la aceleración centrípeta varía a lo largo de una trayectoria compleja, combinando componentes oscilatorias y polinomiales.
+          </p>
+          <p class="text-slate-400">
+            La metodología presentada es escalable y puede aplicarse a vectores de posición más complejos, proporcionando una herramienta valiosa para la investigación y la educación en física y matemáticas aplicadas.
+            <a href="#" class="citation">[3]</a>
+          </p>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="mt-16 pt-8 border-t border-slate-600">
+        <div class="text-center text-slate-400">
+          <p class="mb-4">Análisis vectorial completo del movimiento tridimensional</p>
+          <div class="flex justify-center space-x-6 text-sm">
+            <span><i class="fas fa-calculator mr-2"></i>Cálculos verificados</span>
+            <span><i class="fas fa-check-circle mr-2"></i>Expresiones simplificadas</span>
+            <span><i class="fas fa-eye mr-2"></i>Visualización 3D</span>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Highlight current section in TOC
+        window.addEventListener('scroll', function() {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.toc-fixed a[href^="#"]');
+            
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (window.pageYOffset >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('text-blue-400', 'font-bold');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('text-blue-400', 'font-bold');
+                }
+            });
+        });
+
+        // Initialize Mermaid
+        document.addEventListener('DOMContentLoaded', function() {
+            mermaid.initialize({ 
+                startOnLoad: true,
+                theme: 'dark',
+                themeVariables: {
+                    primaryColor: '#1a1a2e',
+                    primaryTextColor: '#f8fafc',
+                    primaryBorderColor: '#60a5fa',
+                    lineColor: '#cbd5e1',
+                    secondaryColor: '#16213e',
+                    tertiaryColor: '#0f3460',
+                    background: '#1e293b',
+                    mainBkg: '#1a1a2e',
+                    secondBkg: '#16213e',
+                    tertiaryBkg: '#0f3460'
+                }
+            });
+            
+        // Initialize Mermaid Controls for zoom and pan
+        initializeMermaidControls();
+        });
+
+        // Initialize Mermaid Controls for zoom and pan
+        function initializeMermaidControls() {
+            const containers = document.querySelectorAll('.mermaid-container');
+
+            containers.forEach(container => {
+            const mermaidElement = container.querySelector('.mermaid');
+            let scale = 1;
+            let isDragging = false;
+            let startX, startY, translateX = 0, translateY = 0;
+
+            // 触摸相关状态
+            let isTouch = false;
+            let touchStartTime = 0;
+            let initialDistance = 0;
+            let initialScale = 1;
+            let isPinching = false;
+
+            // Zoom controls
+            const zoomInBtn = container.querySelector('.zoom-in');
+            const zoomOutBtn = container.querySelector('.zoom-out');
+            const resetBtn = container.querySelector('.reset-zoom');
+            const fullscreenBtn = container.querySelector('.fullscreen');
+
+            function updateTransform() {
+                mermaidElement.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+
+                if (scale > 1) {
+                container.classList.add('zoomed');
+                } else {
+                container.classList.remove('zoomed');
+                }
+
+                mermaidElement.style.cursor = isDragging ? 'grabbing' : 'grab';
+            }
+
+            if (zoomInBtn) {
+                zoomInBtn.addEventListener('click', () => {
+                scale = Math.min(scale * 1.25, 4);
+                updateTransform();
+                });
+            }
+
+            if (zoomOutBtn) {
+                zoomOutBtn.addEventListener('click', () => {
+                scale = Math.max(scale / 1.25, 0.3);
+                if (scale <= 1) {
+                    translateX = 0;
+                    translateY = 0;
+                }
+                updateTransform();
+                });
+            }
+
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                scale = 1;
+                translateX = 0;
+                translateY = 0;
+                updateTransform();
+                });
+            }
+
+            if (fullscreenBtn) {
+                fullscreenBtn.addEventListener('click', () => {
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                } else if (container.msRequestFullscreen) {
+                    container.msRequestFullscreen();
+                }
+                });
+            }
+
+            // Mouse Events
+            mermaidElement.addEventListener('mousedown', (e) => {
+                if (isTouch) return; // 如果是触摸设备，忽略鼠标事件
+
+                isDragging = true;
+                startX = e.clientX - translateX;
+                startY = e.clientY - translateY;
+                mermaidElement.style.cursor = 'grabbing';
+                updateTransform();
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging && !isTouch) {
+                translateX = e.clientX - startX;
+                translateY = e.clientY - startY;
+                updateTransform();
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging && !isTouch) {
+                isDragging = false;
+                mermaidElement.style.cursor = 'grab';
+                updateTransform();
+                }
+            });
+
+            document.addEventListener('mouseleave', () => {
+                if (isDragging && !isTouch) {
+                isDragging = false;
+                mermaidElement.style.cursor = 'grab';
+                updateTransform();
+                }
+            });
+
+            // 获取两点之间的距离
+            function getTouchDistance(touch1, touch2) {
+                return Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+                );
+            }
+
+            // Touch Events - 触摸事件处理
+            mermaidElement.addEventListener('touchstart', (e) => {
+                isTouch = true;
+                touchStartTime = Date.now();
+
+                if (e.touches.length === 1) {
+                // 单指拖动
+                isPinching = false;
+                isDragging = true;
+
+                const touch = e.touches[0];
+                startX = touch.clientX - translateX;
+                startY = touch.clientY - translateY;
+
+                } else if (e.touches.length === 2) {
+                // 双指缩放
+                isPinching = true;
+                isDragging = false;
+
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                initialDistance = getTouchDistance(touch1, touch2);
+                initialScale = scale;
+                }
+
+                e.preventDefault();
+            }, { passive: false });
+
+            mermaidElement.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && isDragging && !isPinching) {
+                // 单指拖动
+                const touch = e.touches[0];
+                translateX = touch.clientX - startX;
+                translateY = touch.clientY - startY;
+                updateTransform();
+
+                } else if (e.touches.length === 2 && isPinching) {
+                // 双指缩放
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                const currentDistance = getTouchDistance(touch1, touch2);
+
+                if (initialDistance > 0) {
+                    const newScale = Math.min(Math.max(
+                    initialScale * (currentDistance / initialDistance),
+                    0.3
+                    ), 4);
+                    scale = newScale;
+                    updateTransform();
+                }
+                }
+
+                e.preventDefault();
+            }, { passive: false });
+
+            mermaidElement.addEventListener('touchend', (e) => {
+                // 重置状态
+                if (e.touches.length === 0) {
+                isDragging = false;
+                isPinching = false;
+                initialDistance = 0;
+
+                // 延迟重置isTouch，避免鼠标事件立即触发
+                setTimeout(() => {
+                    isTouch = false;
+                }, 100);
+                } else if (e.touches.length === 1 && isPinching) {
+                // 从双指变为单指，切换为拖动模式
+                isPinching = false;
+                isDragging = true;
+
+                const touch = e.touches[0];
+                startX = touch.clientX - translateX;
+                startY = touch.clientY - translateY;
+                }
+
+                updateTransform();
+            });
+
+            mermaidElement.addEventListener('touchcancel', (e) => {
+                isDragging = false;
+                isPinching = false;
+                initialDistance = 0;
+
+                setTimeout(() => {
+                isTouch = false;
+                }, 100);
+
+                updateTransform();
+            });
+
+            // Enhanced wheel zoom with better center point handling
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const rect = container.getBoundingClientRect();
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                const newScale = Math.min(Math.max(scale * delta, 0.3), 4);
+
+                // Adjust translation to zoom towards center
+                if (newScale !== scale) {
+                const scaleDiff = newScale / scale;
+                translateX = translateX * scaleDiff;
+                translateY = translateY * scaleDiff;
+                scale = newScale;
+
+                if (scale <= 1) {
+                    translateX = 0;
+                    translateY = 0;
+                }
+
+                updateTransform();
+                }
+            });
+
+            // Initialize display
+            updateTransform();
+            });
+        }
+
+        // Add citation hover effects
+        document.querySelectorAll('.citation').forEach(citation => {
+            citation.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-1px)';
+                this.style.transition = 'transform 0.2s ease';
+            });
+            
+            citation.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
+  </body>
+
+</html>
+<!DOCTYPE html><html lang="es"><head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Análisis de Vector de Posición y Aceleración Centrípeta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tiempos+Headline:wght@400;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.5.0/mermaid.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #0f3460;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #64748b;
+            --border: #334155;
+        }
+        
+        .font-serif { font-family: 'Tiempos Headline', serif; }
+        .font-sans { font-family: 'Inter', sans-serif; }
+        
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: var(--text-primary);
+            line-height: 1.7;
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, 
+                rgba(15, 23, 42, 0.95) 0%, 
+                rgba(30, 41, 59, 0.9) 50%, 
+                rgba(51, 65, 85, 0.85) 100%);
+        }
+        
+        .math-expression {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            color: #60a5fa;
+            overflow-x: auto;
+        }
+        
+        .toc-fixed {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            width: 280px;
+            max-height: calc(100vh - 4rem);
+            overflow-y: auto;
+            z-index: 50;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .content-main {
+            margin-left: 320px;
+            max-width: 900px;
+        }
+        
+        .bento-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        
+        .bento-item {
+            background: rgba(30, 41, 59, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            backdrop-filter: blur(5px);
+        }
+        
+        .hero-title {
+            grid-column: 1 / 2;
+            grid-row: 1 / 3;
+        }
+        
+        .hero-visual {
+            grid-column: 2 / 3;
+            grid-row: 1 / 2;
+        }
+        
+        .hero-summary {
+            grid-column: 2 / 3;
+            grid-row: 2 / 3;
+        }
+        
+        .chart-container {
+            background: rgba(30, 41, 59, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            backdrop-filter: blur(5px);
+        }
+        
+        .citation {
+            color: #60a5fa;
+            text-decoration: none;
+            border-bottom: 1px dotted #60a5fa;
+        }
+        
+        .citation:hover {
+            color: #93c5fd;
+            border-bottom-style: solid;
+        }
+        
+        .section-divider {
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), transparent);
+            margin: 3rem 0;
+            border-radius: 1px;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(59, 130, 246, 0.05));
+            border-left: 4px solid #60a5fa;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .mermaid-container {
+            display: flex;
+            justify-content: center;
+            min-height: 300px;
+            max-height: 800px;
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mermaid-container .mermaid {
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
+            cursor: grab;
+            transition: transform 0.3s ease;
+            transform-origin: center center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        .mermaid-container .mermaid svg {
+            max-width: 100%;
+            height: 100%;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .mermaid-container .mermaid:active {
+            cursor: grabbing;
+        }
+
+        .mermaid-container.zoomed .mermaid {
+            height: 100%;
+            width: 100%;
+            cursor: grab;
+        }
+
+        .mermaid-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .mermaid-control-btn {
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #374151;
+            font-size: 14px;
+            min-width: 36px;
+            height: 36px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mermaid-control-btn:hover {
+            background: #f8fafc;
+            border-color: #3b82f6;
+            color: #3b82f6;
+            transform: translateY(-1px);
+        }
+
+        .mermaid-control-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Responsive adjustments for mermaid controls */
+        @media (max-width: 1024px) {
+            .mermaid-control-btn:not(.reset-zoom) {
+                display: none;
+            }
+            .mermaid-controls {
+                top: auto;
+                bottom: 15px;
+                right: 15px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .toc-fixed {
+                display: none;
+            }
+            .content-main {
+                margin-left: 0;
+                padding: 0 1rem;
+            }
+            .bento-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+            }
+            .hero-title {
+                grid-column: 1;
+                grid-row: 1;
+            }
+            .hero-visual {
+                grid-column: 1;
+                grid-row: 2;
+                padding: 1rem;
+            }
+            .hero-summary {
+                grid-column: 1;
+                grid-row: 3;
+                padding: 1rem;
+            }
+            .bento-item {
+                word-wrap: break-word;
+            }
+            .mermaid-container {
+                padding: 15px;
+                overflow-x: auto;
+            }
+        }
+    </style>
+  </head>
+
+  <body class="font-sans">
+    <!-- Fixed Table of Contents -->
+    <nav class="toc-fixed">
+      <h3 class="font-serif text-lg font-bold text-blue-300 mb-4">Índice</h3>
+      <ul class="space-y-2 text-sm">
+        <li>
+          <a href="#introduccion" class="citation">Introducción</a>
+        </li>
+        <li>
+          <a href="#vector-velocidad" class="citation">Vector Velocidad</a>
+        </li>
+        <li class="ml-4">
+          <a href="#calculo-vector" class="citation">Cálculo del Vector</a>
+        </li>
+        <li class="ml-4">
+          <a href="#magnitud-velocidad" class="citation">Magnitud del Vector</a>
+        </li>
+        <li>
+          <a href="#aceleracion-centripeta" class="citation">Aceleración Centrípeta</a>
+        </li>
+        <li class="ml-4">
+          <a href="#magnitud-aceleracion" class="citation">Magnitud de la Aceleración</a>
+        </li>
+        <li class="ml-4">
+          <a href="#direccion-aceleracion" class="citation">Dirección de la Aceleración</a>
+        </li>
+        <li>
+          <a href="#visualizacion-geogebra" class="citation">Visualización en GeoGebra</a>
+        </li>
+        <li class="ml-4">
+          <a href="#metodologia" class="citation">Metodología</a>
+        </li>
+        <li class="ml-4">
+          <a href="#comandos-geogebra" class="citation">Comandos de GeoGebra</a>
+        </li>
+        <li>
+          <a href="#conclusiones" class="citation">Conclusiones</a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content-main px-8 py-12">
+      <!-- Hero Section with Bento Grid -->
+      <div class="bento-grid">
+        <!-- Hero Title -->
+        <div class="bento-item hero-title">
+          <h1 class="font-serif text-4xl md:text-5xl font-bold leading-tight mb-6">
+            <span class="italic text-blue-300">Análisis del Vector</span>
+            <br/>
+            de Posición y
+            <br/>
+            <span class="text-2xl md:text-3xl text-slate-300">Cálculo de la Aceleración Centrípeta</span>
+          </h1>
+          <p class="text-lg text-slate-300 leading-relaxed">
+            Un estudio detallado del vector de posición
+            <span class="math-expression inline px-2 py-1 text-sm">
+              $\vec{r} = (3 + 8\sin{4t}, 7 + t^2, 10\cos{5t})$
+            </span>
+            y su aplicación en la determinación de la aceleración centrípeta mediante métodos analíticos y visualización computacional.
+          </p>
+        </div>
+
+        <!-- Hero Visual -->
+        <div class="bento-item hero-visual">
+          <img src="https://kimi-web-img.moonshot.cn/img/www.geogebra.org/3dcb6d4266daacc875c5ef6c7dc50366f8b68f2d.png" alt="Representación tridimensional de un vector en movimiento circular" class="w-full h-32 object-cover rounded-lg opacity-80" size="small" aspect="wide" query="diagrama vector 3D movimiento circular" referrerpolicy="no-referrer" data-modified="1" data-score="0.00"/>
+        </div>
+
+        <!-- Hero Summary -->
+        <div class="bento-item hero-summary">
+          <h3 class="font-serif text-xl font-bold text-blue-300 mb-3">Resumen Ejecutivo</h3>
+          <ul class="text-sm space-y-2 text-slate-300">
+            <li class="flex items-start">
+              <i class="fas fa-vector-square text-blue-400 mt-1 mr-2"></i>
+              <span>Vector velocidad calculado mediante derivación componente por componente</span>
+            </li>
+            <li class="flex items-start">
+              <i class="fas fa-calculator text-green-400 mt-1 mr-2"></i>
+              <span>Expresión simplificada para la magnitud de la velocidad</span>
+            </li>
+            <li class="flex items-start">
+              <i class="fas fa-compass text-yellow-400 mt-1 mr-2"></i>
+              <span>Aceleración centrípeta con magnitud y dirección precisas</span>
+            </li>
+            <li class="flex items-start">
+              <i class="fas fa-chart-line text-purple-400 mt-1 mr-2"></i>
+              <span>11 vectores listos para visualización en GeoGebra</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Introduction Section -->
+      <section id="introduccion">
+        <div class="highlight-box">
+          <p class="text-lg leading-relaxed">
+            <strong>Contexto Teórico:</strong> La aceleración centrípeta es una cantidad vectorial fundamental en la cinemática de partículas que describe la tasa de cambio de la dirección del vector velocidad. En movimientos curvilíneos, esta aceleración apunta hacia el centro de curvatura de la trayectoria, proporcional al cuadrado de la rapidez y en la dirección del vector de posición.
+            <a href="#" class="citation">[1]</a>
+          </p>
+        </div>
+      </section>
+
+      <!-- Vector Velocity Section -->
+      <section id="vector-velocidad" class="mt-16">
+        <h2 class="font-serif text-3xl font-bold text-blue-300 mb-8">1. Vector Velocidad y su Magnitud</h2>
+
+        <div id="calculo-vector" class="mb-12">
+          <h3 class="font-serif text-2xl font-bold mb-6">1.1 Cálculo del Vector Velocidad ($\vec{v}$)</h3>
+
+          <p class="text-lg mb-6">
+            El vector velocidad se obtiene mediante la derivada del vector de posición $\vec{r}$ con respecto al tiempo $t$. Este proceso fundamental en cinemática relaciona la posición de una partícula con su rapidez y dirección de movimiento instantáneas.
+          </p>
+
+          <div class="grid md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-600">
+              <h4 class="font-bold text-blue-300 mb-3">Componente X: $v_x = 32\cos(4t)$</h4>
+              <p class="text-sm text-slate-300">
+                Derivada de $r_x = 3 + 8\sin{4t}$ aplicando la regla de la cadena. La velocidad en x es una función cosenoidal con amplitud <strong>32</strong> y frecuencia angular de <strong>4 radianes</strong> por unidad de tiempo.
+              </p>
+              <div class="math-expression mt-3 text-xs">
+                $v_x = \frac{d}{dt}[8\sin{4t}] = 8 \cdot \cos{4t} \cdot 4 = 32\cos{4t}$
+              </div>
+            </div>
+
+            <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-600">
+              <h4 class="font-bold text-green-300 mb-3">Componente Y: $v_y = 2t$</h4>
+              <p class="text-sm text-slate-300">
+                Derivada de $r_y = 7 + t^2$ aplicando la regla de potencias. La velocidad en y aumenta linealmente con el tiempo, característica de movimiento rectilíneo uniformemente acelerado.
+              </p>
+              <div class="math-expression mt-3 text-xs">
+                $v_y = \frac{d}{dt}[t^2] = 2t$
+              </div>
+            </div>
+
+            <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-600">
+              <h4 class="font-bold text-yellow-300 mb-3">Componente Z: $v_z = -50\sin(5t)$</h4>
+              <p class="text-sm text-slate-300">
+                Derivada de $r_z = 10\cos{5t}$ aplicando la regla de la cadena. La velocidad en z es una función senoidal con amplitud <strong>50</strong> y frecuencia angular de <strong>5 radianes</strong> por unidad de tiempo.
+              </p>
+              <div class="math-expression mt-3 text-xs">
+                $v_z = \frac{d}{dt}[10\cos{5t}] = 10 \cdot (-\sin{5t}) \cdot 5 = -50\sin{5t}$
+              </div>
+            </div>
+          </div>
+
+          <div class="highlight-box">
+            <h4 class="font-bold text-blue-300 mb-3">Vector Velocidad Final</h4>
+            <div class="math-expression text-center">
+              $\vec{v} = (32\cos{4t}, 2t, -50\sin{5t})$
+            </div>
+          </div>
+        </div>
+
+        <div id="magnitud-velocidad" class="mb-12">
+          <h3 class="font-serif text-2xl font-bold mb-6">1.2 Cálculo de la Magnitud del Vector Velocidad ($||\vec{v}||$)</h3>
+
+          <p class="text-lg mb-6">
+            La magnitud del vector velocidad representa la rapidez instantánea de la partícula. Se calcula como la raíz cuadrada de la suma de los cuadrados de sus componentes.
+          </p>
+
+          <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-600 mb-6">
+            <h4 class="font-bold text-purple-300 mb-3">Fórmula General de la Magnitud</h4>
+            <div class="math-expression text-center">
+              $||\vec{v}|| = \sqrt{v_x^2 + v_y^2 + v_z^2}$
+            </div>
+          </div>
+
+          <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-600">
+            <h4 class="font-bold text-green-300 mb-3">Expresión Simplificada</h4>
+            <p class="text-sm text-slate-300 mb-4">
+              Sustituyendo las componentes del vector velocidad y simplificando, obtenemos:
+            </p>
+            <div class="math-expression text-center mb-4">
+              $||\vec{v}|| = 2\sqrt{256\cos^2{4t} + t^2 + 625\sin^2{5t}}$
+            </div>
+            <p class="text-sm text-slate-300">
+              Esta expresión muestra que la rapidez es una función compleja del tiempo, con términos oscilatorios y una tendencia general a aumentar con el tiempo.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- Centripetal Acceleration Section -->
+      <section id="aceleracion-centripeta" class="mt-16">
+        <h2 class="font-serif text-3xl font-bold text-blue-300 mb-8">2. Aceleración Centrípeta ($\vec{a_c}$)</h2>
+
+        <div class="highlight-box mb-8">
+          <p class="text-lg">
+            <strong>Definición General:</strong> La aceleración centrípeta es una cantidad vectorial que describe la tasa de cambio de la dirección del vector velocidad. En movimientos curvilíneos, apunta hacia el centro de curvatura de la trayectoria.
+            <a href="#" class="citation">[2]</a>
+          </p>
+        </div>
+
+        <div id="magnitud-aceleracion" class="mb-12">
+          <h3 class="font-serif text-2xl font-bold mb-6">2.1 Magnitud de la Aceleración Centrípeta ($a_c$)</h3>
+
+          <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-600 mb-6">
+            <h4 class="font-bold text-red-300 mb-3">Fórmula Fundamental: $a_c = \frac{||\vec{v}||^2}{||\vec{r}||}$</h4>
+            <p class="text-sm text-slate-300 mb-4">
+              La magnitud de la aceleración centrípeta es directamente proporcional al cuadrado de la rapidez e inversamente proporcional a la distancia al origen.
+            </p>
+            <div class="math-expression text-center">
+              $a_c = \frac{||\vec{v}||^2}{||\vec{r}||} = \frac{1024\cos^2{4t} + 4t^2 + 2500\sin^2{5t}}{\sqrt{(3 + 8\sin{4t})^2 + (7 + t^2)^2 + (10\cos{5t})^2}}$
+            </div>
+          </div>
+        </div>
+
+        <div id="direccion-aceleracion" class="mb-12">
+          <h3 class="font-serif text-2xl font-bold mb-6">2.2 Dirección de la Aceleración Centrípeta</h3>
+
+          <div class="grid md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-600">
+              <h4 class="font-bold text-blue-300 mb-3">Vector Unitario en la Dirección de $\vec{r}$</h4>
+              <div class="math-expression text-xs mb-3">
+                $\vec{u_r} = \frac{\vec{r}}{||\vec{r}||}$
+              </div>
+              <p class="text-sm text-slate-300">
+                El vector unitario proporciona una descripción de la dirección sin considerar la magnitud. Es fundamental para separar la magnitud de la dirección de la aceleración.
+              </p>
+            </div>
+
+            <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-600">
+              <h4 class="font-bold text-green-300 mb-3">Vector de Aceleración Centrípeta</h4>
+              <div class="math-expression text-xs mb-3">
+                $\vec{a_c} = a_c \cdot \vec{u_r} = \frac{||\vec{v}||^2}{||\vec{r}||^2} \vec{r}$
+              </div>
+              <p class="text-sm text-slate-300">
+                El vector de aceleración centrípeta es paralelo al vector de posición, apuntando desde la posición de la partícula hacia el origen.
+              </p>
+            </div>
+          </div>
+
+          <!-- Mermaid Diagram -->
+          <div class="mermaid-container">
+            <div class="mermaid-controls">
+              <button class="mermaid-control-btn zoom-in" title="放大">
+                <i class="fas fa-search-plus"></i>
+              </button>
+              <button class="mermaid-control-btn zoom-out" title="缩小">
+                <i class="fas fa-search-minus"></i>
+              </button>
+              <button class="mermaid-control-btn reset-zoom" title="重置">
+                <i class="fas fa-expand-arrows-alt"></i>
+              </button>
+              <button class="mermaid-control-btn fullscreen" title="全屏查看">
+                <i class="fas fa-expand"></i>
+              </button>
+            </div>
+            <div class="mermaid">
+              graph TD
+              A[&#34;Vector de Posición r(t)&#34;] --&gt; B[&#34;Derivación&#34;]
+              B --&gt; C[&#34;Vector Velocidad v(t)&#34;]
+              C --&gt; D[&#34;Magnitud ||v||&#34;]
+              A --&gt; E[&#34;Magnitud ||r||&#34;]
+              D --&gt; F[&#34;||v||²&#34;]
+              E --&gt; G[&#34;Centripetal Acceleration&#34;]
+              F --&gt; G
+              G --&gt; H[&#34;Dirección: Vector Unitario u_r&#34;]
+              H --&gt; I[&#34;Aceleración Centrípeta a_c&#34;]
+
+              style A fill:#1a1a2e,stroke:#60a5fa,stroke-width:2px,color:#f8fafc
+              style C fill:#16213e,stroke:#34d399,stroke-width:2px,color:#f8fafc
+              style G fill:#0f3460,stroke:#fbbf24,stroke-width:2px,color:#f8fafc
+              style I fill:#dc2626,stroke:#f87171,stroke-width:2px,color:#f8fafc
+
+              classDef default fill:#1e293b,stroke:#334155,stroke-width:1px,color:#cbd5e1
+              classDef process fill:#1e293b,stroke:#334155,stroke-width:1px,color:#cbd5e1
+              classDef data fill:#1e293b,stroke:#334155,stroke-width:1px,color:#cbd5e1
+            </div>
+          </div>
+
+          <h4 class="font-bold text-yellow-300 mb-4">Componentes del Vector de Aceleración Centrípeta</h4>
+          <div class="grid md:grid-cols-3 gap-4">
+            <div class="math-expression text-xs">
+              $a_{c_x} = \frac{||\vec{v}||^2}{||\vec{r}||^2} (3 + 8\sin{4t})$
+            </div>
+            <div class="math-expression text-xs">
+              $a_{c_y} = \frac{||\vec{v}||^2}{||\vec{r}||^2} (7 + t^2)$
+            </div>
+            <div class="math-expression text-xs">
+              $a_{c_z} = \frac{||\vec{v}||^2}{||\vec{r}||^2} (10\cos{5t})$
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- GeoGebra Visualization Section -->
+      <section id="visualizacion-geogebra" class="mt-16">
+        <h2 class="font-serif text-3xl font-bold text-blue-300 mb-8">3. Expresiones para la Visualización en GeoGebra</h2>
+
+        <div id="metodologia" class="mb-12">
+          <h3 class="font-serif text-2xl font-bold mb-6">3.1 Metodología para la Generación de Vectores</h3>
+
+          <div class="grid md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-gradient-to-br from-blue-900/30 to-blue-800/20 p-6 rounded-lg border border-blue-600/30">
+              <i class="fas fa-clock text-blue-400 text-2xl mb-3"></i>
+              <h4 class="font-bold text-blue-300 mb-3">Selección de Valores de Tiempo</h4>
+              <p class="text-sm text-slate-300">
+                11 valores de $t$ desde 0 hasta 5 con incremento de 0.5, proporcionando una muestra representativa de la trayectoria.
+              </p>
+            </div>
+
+            <div class="bg-gradient-to-br from-green-900/30 to-green-800/20 p-6 rounded-lg border border-green-600/30">
+              <i class="fas fa-calculator text-green-400 text-2xl mb-3"></i>
+              <h4 class="font-bold text-green-300 mb-3">Cálculo de Vectores</h4>
+              <p class="text-sm text-slate-300">
+                Para cada $t$, se calculan los vectores de posición $\vec{r}(t)$ y aceleración centrípeta $\vec{a_c}(t)$.
+              </p>
+            </div>
+
+            <div class="bg-gradient-to-br from-purple-900/30 to-purple-800/20 p-6 rounded-lg border border-purple-600/30">
+              <i class="fas fa-code text-purple-400 text-2xl mb-3"></i>
+              <h4 class="font-bold text-purple-300 mb-3">Formato GeoGebra</h4>
+              <p class="text-sm text-slate-300">
+                Comandos en formato
+                <code>Vector((x1,y1,z1), (x2,y2,z2))</code> para visualización directa.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div id="comandos-geogebra" class="mb-12">
+          <h3 class="font-serif text-2xl font-bold mb-6">3.2 Lista de Expresiones para 11 Vectores de $\vec{a_c}$</h3>
+
+          <div class="overflow-x-auto">
+            <table class="w-full bg-slate-800/30 border border-slate-600 rounded-lg">
+              <thead class="bg-slate-700/50">
+                <tr>
+                  <th class="px-6 py-4 text-left font-bold text-blue-300">Tiempo (t)</th>
+                  <th class="px-6 py-4 text-left font-bold text-blue-300">Comando de GeoGebra</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-600">
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">0.0</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((3, 7, 10), (1536/79, 3584/79, 5120/79))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">0.5</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((10.2743794146055, 7.25000000000000, -8.01143615546934), (49.6255653687122, 35.0177207210894, -38.6954805333881))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">1.0</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((-3.05441996246343, 8.00000000000000, 2.83662185463226), (-102.857960004734, 269.400963243518, 95.5235824994431))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">1.5</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((0.764676014408593, 9.25000000000000, 3.46635317835026), (24.5588454954038, 297.079176738896, 111.327713352492))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">2.0</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((10.9148659729871, 11.0000000000000, -8.39071529076452), (27.3303888908661, 27.5435610976406, -21.0100162967345))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">2.5</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((-1.35216888711496, 13.2500000000000, 9.97798279178581), (-3.69561141434797, 36.2135615652186, 27.2708146510964))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">3.0</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((-1.29258334400348, 16.0000000000000, -7.59687912858821), (-7.46887598139352, 92.4520776603591, -43.8967036982874))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">3.5</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((10.9248588455590, 19.2500000000000, 2.19439963211459), (54.0525553691812, 95.2425752649165, 10.8571569934015))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">4.0</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((0.696773466679478, 23.0000000000000, 4.08082061813392), (3.93818867280101, 129.996826523950, 23.0649447813440))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">4.5</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((-3.00789797417341, 27.2500000000000, -8.73304640093516), (-4.07227942305567, 36.8927454425253, -11.8233415709161))</code>
+                  </td>
+                </tr>
+                <tr class="hover:bg-slate-700/30">
+                  <td class="px-6 py-4 font-mono text-green-400">5.0</td>
+                  <td class="px-6 py-4 font-mono text-sm">
+                    <code>Vector((10.3035620058210, 32.0000000000000, 9.91202811863474), (2.63642674041773, 8.18800873384417, 2.53624290017157))</code>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="highlight-box mt-6">
+            <h4 class="font-bold text-blue-300 mb-3">Instrucciones para GeoGebra</h4>
+            <ol class="list-decimal list-inside space-y-2 text-sm">
+              <li>Abrir GeoGebra en modo 3D (<a href="https://www.geogebra.org/3d" class="citation">geogebra.org/3d</a>)</li>
+              <li>Activar la vista algebraica (menú Vista &gt; Vista Algebraica)</li>
+              <li>Copiar y pegar cada comando en la barra de entrada</li>
+              <li>Presionar Enter para visualizar cada vector</li>
+              <li>Usar la herramienta de rotación 3D para explorar la visualización</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- Conclusions Section -->
+      <section id="conclusiones" class="mt-16">
+        <h2 class="font-serif text-3xl font-bold text-blue-300 mb-8">4. Conclusiones y Aplicaciones</h2>
+
+        <div class="grid md:grid-cols-2 gap-8 mb-8">
+          <div class="bg-gradient-to-br from-slate-800/50 to-slate-700/40 p-8 rounded-lg border border-slate-600">
+            <h3 class="font-serif text-xl font-bold text-green-300 mb-4">Resultados Clave</h3>
+            <ul class="space-y-3 text-slate-300">
+              <li class="flex items-start">
+                <i class="fas fa-check-circle text-green-400 mt-1 mr-3"></i>
+                <span>Vector velocidad calculado correctamente mediante derivación componente por componente</span>
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-check-circle text-green-400 mt-1 mr-3"></i>
+                <span>Expresión simplificada obtenida para la magnitud de la velocidad</span>
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-check-circle text-green-400 mt-1 mr-3"></i>
+                <span>Aceleración centrípeta determinada con precisión en magnitud y dirección</span>
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-check-circle text-green-400 mt-1 mr-3"></i>
+                <span>11 vectores generados para visualización completa en GeoGebra</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="bg-gradient-to-br from-slate-800/50 to-slate-700/40 p-8 rounded-lg border border-slate-600">
+            <h3 class="font-serif text-xl font-bold text-blue-300 mb-4">Aplicaciones Prácticas</h3>
+            <ul class="space-y-3 text-slate-300">
+              <li class="flex items-start">
+                <i class="fas fa-rocket text-blue-400 mt-1 mr-3"></i>
+                <span>Análisis de trayectorias en mecánica orbital y dinámica de partículas</span>
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-cog text-blue-400 mt-1 mr-3"></i>
+                <span>Diseño de sistemas mecánicos con movimiento curvilíneo</span>
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-atom text-blue-400 mt-1 mr-3"></i>
+                <span>Estudio de partículas en campos de fuerza central</span>
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-chart-line text-blue-400 mt-1 mr-3"></i>
+                <span>Validación de modelos computacionales en física</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-blue-900/30 to-purple-900/30 p-8 rounded-lg border border-blue-600/30">
+          <h3 class="font-serif text-xl font-bold text-blue-300 mb-4">Impacto Educativo</h3>
+          <p class="text-lg text-slate-300 leading-relaxed mb-4">
+            Este análisis demuestra la aplicación práctica de conceptos fundamentales de cinemática vectorial. La visualización en GeoGebra permite una comprensión intuitiva de cómo la aceleración centrípeta varía a lo largo de una trayectoria compleja, combinando componentes oscilatorias y polinomiales.
+          </p>
+          <p class="text-slate-400">
+            La metodología presentada es escalable y puede aplicarse a vectores de posición más complejos, proporcionando una herramienta valiosa para la investigación y la educación en física y matemáticas aplicadas.
+            <a href="#" class="citation">[3]</a>
+          </p>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="mt-16 pt-8 border-t border-slate-600">
+        <div class="text-center text-slate-400">
+          <p class="mb-4">Análisis vectorial completo del movimiento tridimensional</p>
+          <div class="flex justify-center space-x-6 text-sm">
+            <span><i class="fas fa-calculator mr-2"></i>Cálculos verificados</span>
+            <span><i class="fas fa-check-circle mr-2"></i>Expresiones simplificadas</span>
+            <span><i class="fas fa-eye mr-2"></i>Visualización 3D</span>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Highlight current section in TOC
+        window.addEventListener('scroll', function() {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.toc-fixed a[href^="#"]');
+            
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (window.pageYOffset >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('text-blue-400', 'font-bold');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('text-blue-400', 'font-bold');
+                }
+            });
+        });
+
+        // Initialize Mermaid
+        document.addEventListener('DOMContentLoaded', function() {
+            mermaid.initialize({ 
+                startOnLoad: true,
+                theme: 'dark',
+                themeVariables: {
+                    primaryColor: '#1a1a2e',
+                    primaryTextColor: '#f8fafc',
+                    primaryBorderColor: '#60a5fa',
+                    lineColor: '#cbd5e1',
+                    secondaryColor: '#16213e',
+                    tertiaryColor: '#0f3460',
+                    background: '#1e293b',
+                    mainBkg: '#1a1a2e',
+                    secondBkg: '#16213e',
+                    tertiaryBkg: '#0f3460'
+                }
+            });
+            
+        // Initialize Mermaid Controls for zoom and pan
+        initializeMermaidControls();
+        });
+
+        // Initialize Mermaid Controls for zoom and pan
+        function initializeMermaidControls() {
+            const containers = document.querySelectorAll('.mermaid-container');
+
+            containers.forEach(container => {
+            const mermaidElement = container.querySelector('.mermaid');
+            let scale = 1;
+            let isDragging = false;
+            let startX, startY, translateX = 0, translateY = 0;
+
+            // 触摸相关状态
+            let isTouch = false;
+            let touchStartTime = 0;
+            let initialDistance = 0;
+            let initialScale = 1;
+            let isPinching = false;
+
+            // Zoom controls
+            const zoomInBtn = container.querySelector('.zoom-in');
+            const zoomOutBtn = container.querySelector('.zoom-out');
+            const resetBtn = container.querySelector('.reset-zoom');
+            const fullscreenBtn = container.querySelector('.fullscreen');
+
+            function updateTransform() {
+                mermaidElement.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+
+                if (scale > 1) {
+                container.classList.add('zoomed');
+                } else {
+                container.classList.remove('zoomed');
+                }
+
+                mermaidElement.style.cursor = isDragging ? 'grabbing' : 'grab';
+            }
+
+            if (zoomInBtn) {
+                zoomInBtn.addEventListener('click', () => {
+                scale = Math.min(scale * 1.25, 4);
+                updateTransform();
+                });
+            }
+
+            if (zoomOutBtn) {
+                zoomOutBtn.addEventListener('click', () => {
+                scale = Math.max(scale / 1.25, 0.3);
+                if (scale <= 1) {
+                    translateX = 0;
+                    translateY = 0;
+                }
+                updateTransform();
+                });
+            }
+
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                scale = 1;
+                translateX = 0;
+                translateY = 0;
+                updateTransform();
+                });
+            }
+
+            if (fullscreenBtn) {
+                fullscreenBtn.addEventListener('click', () => {
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                } else if (container.msRequestFullscreen) {
+                    container.msRequestFullscreen();
+                }
+                });
+            }
+
+            // Mouse Events
+            mermaidElement.addEventListener('mousedown', (e) => {
+                if (isTouch) return; // 如果是触摸设备，忽略鼠标事件
+
+                isDragging = true;
+                startX = e.clientX - translateX;
+                startY = e.clientY - translateY;
+                mermaidElement.style.cursor = 'grabbing';
+                updateTransform();
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging && !isTouch) {
+                translateX = e.clientX - startX;
+                translateY = e.clientY - startY;
+                updateTransform();
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging && !isTouch) {
+                isDragging = false;
+                mermaidElement.style.cursor = 'grab';
+                updateTransform();
+                }
+            });
+
+            document.addEventListener('mouseleave', () => {
+                if (isDragging && !isTouch) {
+                isDragging = false;
+                mermaidElement.style.cursor = 'grab';
+                updateTransform();
+                }
+            });
+
+            // 获取两点之间的距离
+            function getTouchDistance(touch1, touch2) {
+                return Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+                );
+            }
+
+            // Touch Events - 触摸事件处理
+            mermaidElement.addEventListener('touchstart', (e) => {
+                isTouch = true;
+                touchStartTime = Date.now();
+
+                if (e.touches.length === 1) {
+                // 单指拖动
+                isPinching = false;
+                isDragging = true;
+
+                const touch = e.touches[0];
+                startX = touch.clientX - translateX;
+                startY = touch.clientY - translateY;
+
+                } else if (e.touches.length === 2) {
+                // 双指缩放
+                isPinching = true;
+                isDragging = false;
+
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                initialDistance = getTouchDistance(touch1, touch2);
+                initialScale = scale;
+                }
+
+                e.preventDefault();
+            }, { passive: false });
+
+            mermaidElement.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && isDragging && !isPinching) {
+                // 单指拖动
+                const touch = e.touches[0];
+                translateX = touch.clientX - startX;
+                translateY = touch.clientY - startY;
+                updateTransform();
+
+                } else if (e.touches.length === 2 && isPinching) {
+                // 双指缩放
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                const currentDistance = getTouchDistance(touch1, touch2);
+
+                if (initialDistance > 0) {
+                    const newScale = Math.min(Math.max(
+                    initialScale * (currentDistance / initialDistance),
+                    0.3
+                    ), 4);
+                    scale = newScale;
+                    updateTransform();
+                }
+                }
+
+                e.preventDefault();
+            }, { passive: false });
+
+            mermaidElement.addEventListener('touchend', (e) => {
+                // 重置状态
+                if (e.touches.length === 0) {
+                isDragging = false;
+                isPinching = false;
+                initialDistance = 0;
+
+                // 延迟重置isTouch，避免鼠标事件立即触发
+                setTimeout(() => {
+                    isTouch = false;
+                }, 100);
+                } else if (e.touches.length === 1 && isPinching) {
+                // 从双指变为单指，切换为拖动模式
+                isPinching = false;
+                isDragging = true;
+
+                const touch = e.touches[0];
+                startX = touch.clientX - translateX;
+                startY = touch.clientY - translateY;
+                }
+
+                updateTransform();
+            });
+
+            mermaidElement.addEventListener('touchcancel', (e) => {
+                isDragging = false;
+                isPinching = false;
+                initialDistance = 0;
+
+                setTimeout(() => {
+                isTouch = false;
+                }, 100);
+
+                updateTransform();
+            });
+
+            // Enhanced wheel zoom with better center point handling
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const rect = container.getBoundingClientRect();
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                const newScale = Math.min(Math.max(scale * delta, 0.3), 4);
+
+                // Adjust translation to zoom towards center
+                if (newScale !== scale) {
+                const scaleDiff = newScale / scale;
+                translateX = translateX * scaleDiff;
+                translateY = translateY * scaleDiff;
+                scale = newScale;
+
+                if (scale <= 1) {
+                    translateX = 0;
+                    translateY = 0;
+                }
+
+                updateTransform();
+                }
+            });
+
+            // Initialize display
+            updateTransform();
+            });
+        }
+
+        // Add citation hover effects
+        document.querySelectorAll('.citation').forEach(citation => {
+            citation.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-1px)';
+                this.style.transition = 'transform 0.2s ease';
+            });
+            
+            citation.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
+  
+
+</body></html>
